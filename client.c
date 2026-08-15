@@ -13,7 +13,7 @@ int main(){
     address.sin_port = htons(80);
     inet_pton(AF_INET, ip, &address.sin_addr.s_addr);
 
-    int result = connect(socketFD, &address, sizeof address);
+    int result = connect(socketFD,(struct sockaddr*)&address, sizeof address);
 
     if(result == 0){
         printf("Successful Connection\n");
