@@ -1,6 +1,10 @@
 #include <stdbool.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "socketutil.h"
+
+void startListeningAndPrintMessagesOnNewThread(int socketFD);
+void *listenAndPrint(void *arg);
 
 int main(){
 
@@ -18,6 +22,8 @@ int main(){
     size_t lineSize = 0;
     printf("type some shit...\n");
 
+    startListeningAndPrintMessagesOnNewThread(socketFD);
+
     while(true){
         ssize_t charCount = getline(&line, &lineSize, stdin);
 
@@ -32,4 +38,33 @@ int main(){
     close(socketFD);
 
     return 0;
+}
+
+void startListeningAndPrintMessagesOnNewThread(int socketFD){
+
+    pthread_t id;
+    pthread_create(&id, NULL, listenAndPrint, (void *)(intptr_t)socketFD);
+
+    
+}
+
+void *listenAndPrint(void *arg){
+    int socketFD = (int)(intptr_t)arg;
+
+    char buffer[1024];
+
+    while(true){
+        ssize_t amountReceived = recv(socketFD, buffer, 1023, 0);
+
+        if(amountReceived > 0){
+            buffer[amountReceived] = '\0';
+            printf("Response : %s\n", buffer);
+        }
+
+        if(amountReceived <= 0) break;
+    }
+
+    close(socketFD);
+
+    return NULL;
 }
