@@ -1,6 +1,7 @@
-#include <netinet/in.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "socketutil.h"
 
 struct AcceptedSocket{
@@ -11,7 +12,10 @@ struct AcceptedSocket{
 };
 
 struct AcceptedSocket * acceptIncomingConnection(int serverSocketFD);
-void receiveAndPrintIncomingData(int socketFD);
+void *receiveAndPrintIncomingData(void *arg);
+void startAcceptingIncomingConnections(int serverSocketFD);
+void *acceptNewConnectionAndReceiveAndPrintItsData(void *arg);
+void receiveAndPrintIncomingDataOnSeparateThread(struct AcceptedSocket * clientSocket);
 
 int main(){
 
@@ -22,41 +26,57 @@ int main(){
     if(result == 0) printf("Socket bound successfully\n");
 
     int listenResult = listen(serverSocketFD, 10);
-
-    struct AcceptedSocket* clientSocket = acceptIncomingConnection(serverSocketFD);
-
-    // char buffer[1024];
-    // while(true){
-    //     ssize_t amountReceived = recv(clientSocket->acceptedSocketFD, buffer, 1024, 0);
     
-    //     if(amountReceived > 0){
-    //         buffer[amountReceived] = 0;
-    //         printf("Response : %s\n", buffer);
-    //     }
-
-    //     if(amountReceived <= 0) break;
-    // }
-
-    receiveAndPrintIncomingData(clientSocket->acceptedSocketFD);
-
-    close(clientSocket->acceptedSocketFD);
+    startAcceptingIncomingConnections(serverSocketFD);
+    
     shutdown(serverSocketFD, SHUT_RDWR);
-
+    
     return 0;
 }
 
-void receiveAndPrintIncomingData(int socketFD){
-    char buffer[1024];
-    while(true){
-        ssize_t amountReceived = recv(socketFD, buffer, 1024, 0);
+void startAcceptingIncomingConnections(int serverSocketFD){
     
+    while(true){
+        struct AcceptedSocket* clientSocket = acceptIncomingConnection(serverSocketFD);
+
+        receiveAndPrintIncomingDataOnSeparateThread(clientSocket);
+    }
+    
+}
+
+void *acceptNewConnectionAndReceiveAndPrintItsData(void *arg){
+    int serverSocketFD = (int)(intptr_t)arg;
+
+    
+
+    return NULL;
+}
+
+void receiveAndPrintIncomingDataOnSeparateThread(struct AcceptedSocket * clientSocket){
+
+    pthread_t id;
+    pthread_create(&id, NULL, receiveAndPrintIncomingData, (void *)(intptr_t)clientSocket->acceptedSocketFD);
+}
+
+void *receiveAndPrintIncomingData(void *arg){
+    int socketFD = (int)(intptr_t)arg;
+
+    char buffer[1024];
+
+    while(true){
+        ssize_t amountReceived = recv(socketFD, buffer, 1023, 0);
+
         if(amountReceived > 0){
-            buffer[amountReceived] = 0;
+            buffer[amountReceived] = '\0';
             printf("Response : %s\n", buffer);
         }
 
         if(amountReceived <= 0) break;
     }
+
+    close(socketFD);
+
+    return NULL;
 }
 
 struct AcceptedSocket * acceptIncomingConnection(int serverSocketFD){
