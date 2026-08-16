@@ -1,6 +1,17 @@
+#include <netinet/in.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include "socketutil.h"
+
+struct AcceptedSocket{
+    int acceptedSocketFD;
+    struct sockaddr_in address;
+    int error;
+    bool acceptedSuccessfully;
+};
+
+struct AcceptedSocket * acceptIncomingConnection(int serverSocketFD);
+void receiveAndPrintIncomingData(int socketFD);
 
 int main(){
 
@@ -12,13 +23,32 @@ int main(){
 
     int listenResult = listen(serverSocketFD, 10);
 
-    struct sockaddr_in clientAddress;
-    int clientAddressSize = sizeof(clientAddress);
-    int clientSocketFD = accept(serverSocketFD, (struct sockaddr*)&clientAddress, &clientAddressSize);
+    struct AcceptedSocket* clientSocket = acceptIncomingConnection(serverSocketFD);
 
+    // char buffer[1024];
+    // while(true){
+    //     ssize_t amountReceived = recv(clientSocket->acceptedSocketFD, buffer, 1024, 0);
+    
+    //     if(amountReceived > 0){
+    //         buffer[amountReceived] = 0;
+    //         printf("Response : %s\n", buffer);
+    //     }
+
+    //     if(amountReceived <= 0) break;
+    // }
+
+    receiveAndPrintIncomingData(clientSocket->acceptedSocketFD);
+
+    close(clientSocket->acceptedSocketFD);
+    shutdown(serverSocketFD, SHUT_RDWR);
+
+    return 0;
+}
+
+void receiveAndPrintIncomingData(int socketFD){
     char buffer[1024];
     while(true){
-        ssize_t amountReceived = recv(clientSocketFD, buffer, 1024, 0);
+        ssize_t amountReceived = recv(socketFD, buffer, 1024, 0);
     
         if(amountReceived > 0){
             buffer[amountReceived] = 0;
@@ -27,9 +57,19 @@ int main(){
 
         if(amountReceived <= 0) break;
     }
+}
 
-    close(clientSocketFD);
-    shutdown(serverSocketFD, SHUT_RDWR);
+struct AcceptedSocket * acceptIncomingConnection(int serverSocketFD){
+    struct sockaddr_in clientAddress;
+    socklen_t clientAddressSize = sizeof(clientAddress);
+    int clientSocketFD = accept(serverSocketFD, (struct sockaddr*)&clientAddress, &clientAddressSize);
 
-    return 0;
+    struct AcceptedSocket* acceptedSocket = malloc(sizeof(struct AcceptedSocket));
+    acceptedSocket->address = clientAddress;
+    acceptedSocket->acceptedSocketFD = clientSocketFD;
+    acceptedSocket->acceptedSuccessfully = clientSocketFD > 0;
+
+    if(!acceptedSocket->acceptedSuccessfully) acceptedSocket->error = clientSocketFD;
+
+    return acceptedSocket;
 }
