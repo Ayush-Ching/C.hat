@@ -4,7 +4,7 @@ int main(){
 
     int socketFD = createTCPIpv4Socket();
 
-    struct sockaddr_in* address = createIpv4Address("142.250.188.46", 80);
+    struct sockaddr_in* address = createIpv4Address("127.0.0.1", 2000);
 
 
     int result = connect(socketFD,(struct sockaddr*)address, sizeof(*address));
