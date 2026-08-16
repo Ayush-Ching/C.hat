@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
 #include "socketutil.h"
@@ -18,19 +19,30 @@ int main(){
         printf("Successful Connection\n");
     }
 
+    char *name = NULL;
+    size_t nameSize = 0;
+    printf("Please enter your name : \n");
+    ssize_t nameCount = getline(&name, &nameSize, stdin);
+    name[nameCount-1] = '\0';
+
     char *line = NULL;
     size_t lineSize = 0;
-    printf("type some shit...\n");
+    printf("Send a message...\n");
 
     startListeningAndPrintMessagesOnNewThread(socketFD);
 
+    char buffer[1024];
+
     while(true){
         ssize_t charCount = getline(&line, &lineSize, stdin);
+        line[charCount-1] = '\0';
+
+        sprintf(buffer, "%s : %s", name, line);
 
         if(charCount > 0){
-            if(strcmp(line, "exit\n") == 0) break;
+            if(strcmp(line, "exit") == 0) break;
 
-            ssize_t amountSent = send(socketFD, line, charCount, 0);
+            ssize_t amountSent = send(socketFD, buffer, strlen(buffer), 0);
         }
 
     }

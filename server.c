@@ -73,7 +73,7 @@ void *receiveAndPrintIncomingData(void *arg){
 
         if(amountReceived > 0){
             buffer[amountReceived] = '\0';
-            printf("Response : %s\n", buffer);
+            printf("%s\n", buffer);
 
             sendReceivedMessageToOtherClients(buffer, socketFD);
         }
