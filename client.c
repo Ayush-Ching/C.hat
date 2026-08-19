@@ -11,7 +11,13 @@ int main(){
 
     int socketFD = createTCPIpv4Socket();
 
-    struct sockaddr_in* address = createIpv4Address("127.0.0.1", 2000);
+    char *ip = NULL;
+    size_t ipSize = 0;
+    printf("Please enter ip address of the server : ");
+    ssize_t ipCount = getline(&ip, &ipSize, stdin);
+    ip[ipCount-1] = '\0';
+
+    struct sockaddr_in* address = createIpv4Address(ip, 2000);
 
     int result = connect(socketFD,(struct sockaddr*)address, sizeof(*address));
 
@@ -21,7 +27,7 @@ int main(){
 
     char *name = NULL;
     size_t nameSize = 0;
-    printf("Please enter your name : \n");
+    printf("Please enter your name : ");
     ssize_t nameCount = getline(&name, &nameSize, stdin);
     name[nameCount-1] = '\0';
 
@@ -70,7 +76,7 @@ void *listenAndPrint(void *arg){
 
         if(amountReceived > 0){
             buffer[amountReceived] = '\0';
-            printf("Response : %s\n", buffer);
+            printf("%s\n", buffer);
         }
 
         if(amountReceived <= 0) break;
